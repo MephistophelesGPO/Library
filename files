@@ -22,7 +22,7 @@ function Files.File(Name, Parent)
             writefile(Path, HttpService:JSONEncode(Contents))
         end;
         __index = function(_, k)
-            return rawget(Proxy, k)
+            return rawget(Proxy, k) or HttpService:JSONDecode(readfile(Path))[k]
         end
     })
 
