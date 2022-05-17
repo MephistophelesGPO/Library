@@ -1,0 +1,36 @@
+local Files = {}
+
+local HttpService = game:GetService("HttpService")
+
+function Files.Folder(Name)
+    if not isfolder(Name) then
+        makefolder(Name)
+    end
+
+    return Name
+end
+
+function Files.File(Name, Parent)
+    local Path = (Parent and Parent.."/" or "")..Name..".json"
+    
+    local Proxy = {}
+    local self = setmetatable({}, {
+        __newindex = function(_, k, v)
+            rawset(Proxy, k, v)
+            local Contents = HttpService:JSONDecode(readfile(Path))
+            Contents[k] = v
+            writefile(Path, HttpService:JSONEncode(Contents))
+        end;
+        __index = function(_, k)
+            return rawget(Proxy, k)
+        end
+    })
+
+    if not isfile(Path) then
+        writefile(Path, HttpService:JSONEncode({}))
+    end
+
+    return self
+end
+
+return Files
