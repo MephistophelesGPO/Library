@@ -1,1 +1,16 @@
+local Library = {
+    ["file"] = "https://raw.githubusercontent.com/MephistophelesGPO/Library/main/files";
+    ["esp"] = "https://raw.githubusercontent.com/MephistophelesGPO/Library/main/esp";
+}
 
+function Library:Get(Name)
+    assert(type(Name) == "string", "Argument #1 must be a string.")
+    if not Library[Name:lower()] then
+        error(("Library with name %s does not exist."))
+        return
+    end
+
+    return loadstring(game:HttpGet(Library[Name:lower()]))()
+end
+
+return Library
