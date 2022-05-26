@@ -33,7 +33,6 @@ local Default = {
         ShowDistance = true;
         AutoRemove = true;
     };
-
     Text = {
         CustomName = nil;
         TextSize = 17;
@@ -161,9 +160,9 @@ function ESP.Base(Settings)
         if self.BaseOptions.ShowDistance then
             Display = Display.."\n["..math.floor(Distance).."]"
         end
-        if self.BaseOptions.ShowHealth and Options.Humanoid then
+        if self.BaseOptions.ShowHealth and SourceData.Humanoid then
             Display = Display..(Display:len() == DisplayName:len() and "\n" or " ").."["..
-            (math.floor(Options.Humanoid.Health).."/"..math.floor(Options.Humanoid.MaxHealth)).."]"
+            (math.floor(SourceData.Humanoid.Health).."/"..math.floor(SourceData.Humanoid.MaxHealth)).."]"
         end
 
         Text.Text = Display
@@ -216,9 +215,6 @@ function ESP.Base(Settings)
 
     self.Highlights = {}
     self.Drawings = setmetatable({}, {
-        __index = function(_, k)
-            return rawget(self.Proxy, k)
-        end;
         __newindex = function(_, k, v)
             rawset(self.Proxy, k, v)
 
@@ -269,8 +265,8 @@ function ESP:Add(Type, Object, Settings)
 
     local function Void()
         if Type ~= "Highlight" then
+            self.Proxy[Slot] = nil
             CreatedInstance:Remove()
-            self.Drawings[Slot] = nil
         else
             CreatedInstance:Destroy()
             self.HighlightCount = self.HighlightCount - 1
@@ -307,12 +303,17 @@ function ESP:Add(Type, Object, Settings)
         _SourceData = SourceData;
     }
 
+    local Proxy = setmetatable({}, {})
+    rawset(Proxy, "Remove", Void)
+    rawset(Proxy, "Update", Update)
+
     if self.BaseOptions.AutoRemove then
         local Connection
         Connection = Object.AncestryChanged:Connect(function(_, new)
-            if new then return end
-            Void()
-            Connection:Disconnect()
+            if not new then
+                Proxy:Remove()
+                Connection:Disconnect()
+            end
         end)
     end
 
@@ -320,22 +321,23 @@ function ESP:Add(Type, Object, Settings)
         self.Drawings[Slot] = Holder
     end
 
-    local Proxy = setmetatable({}, {})
-    rawset(Proxy, "Remove", Void)
-    rawset(Proxy, "Update", Update)
     return Proxy
 end
 
 function ESP:Purge(Type)
+    if Type == "Highlight" then
+        for _, value in ipairs(self.HighlightFolder:GetChildren()) do
+            value:Destroy()
+            self.HighlightCount = self.HighlightCount - 1
+        end
+        return
+    end
+
     for index, value in ipairs(self.Proxy) do
         if not Type or value._Type == Type then
+            self.Proxy[index] = nil
             value._ESPObject:Remove()
-            self.Drawings[index] = nil
         end
-    end
-    for _, value in ipairs(self.HighlightFolder:GetChildren()) do
-        value:Destroy()
-        self.HighlightCount = self.HighlightCount - 1
     end
 end
 
